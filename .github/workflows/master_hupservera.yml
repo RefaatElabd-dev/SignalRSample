@@ -55,3 +55,12 @@ jobs:
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_BCC9A51A2B334409B821779918B456C6 }}
           package: .
+
+      - name: Deploy 2 to Azure Web App
+        id: deploy-to-webapp2
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'HubServerB'
+          slot-name: 'Production'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_DC6A37E8975C4D869DE90E7769D3D09C }}
+          package: .
