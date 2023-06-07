@@ -1,31 +1,46 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Caching.Distributed;
+using SignalRSamble.cacheServise;
+using System.Text;
 
 namespace SignalRSamble.Hubs
 {
     public class UserHub: Hub
     {
-        public static int TotalViews { get; set; } = 0;
-        public static int TotalUsers { get; set; } = 0;
+        private readonly IDistributedCache _cache;
 
-        public async Task NewPageLoaded()
+        public UserHub(IDistributedCache cache)
         {
-            TotalViews++;
-
-            await Clients.All.SendAsync("updateTotalViews", TotalViews);
+            _cache = cache;
         }
 
-        public override Task OnConnectedAsync()
+        public async Task<string> NewPageLoaded()
         {
-            TotalUsers++;
-            Clients.All.SendAsync("updateTotalUsers", TotalUsers).GetAwaiter().GetResult();
-            return base.OnConnectedAsync();
+
+            int _totalViews = await _cache.GetRecordAsync<int>("TotalViews");
+            await _cache.SetRecordAsync("TotalViews", ++_totalViews);
+            var x = _totalViews;
+            //TotalViews++;
+            await Clients.All.SendAsync("updateTotalViews", _totalViews);
+            return $"number of views is: {_totalViews}";
         }
 
-        public override Task OnDisconnectedAsync(Exception? exception)
+        public async override Task OnConnectedAsync()
         {
-            TotalUsers--;
-            Clients.All.SendAsync("updateTotalUsers", TotalUsers).GetAwaiter().GetResult();
-            return base.OnDisconnectedAsync(exception);
+            int _totalUsers = await _cache.GetRecordAsync<int>("TotalUsers");
+            await _cache.SetRecordAsync("TotalUsers", ++_totalUsers);
+            //TotalUsers++;
+            Clients.All.SendAsync("updateTotalUsers", _totalUsers).GetAwaiter().GetResult();
+            await base.OnConnectedAsync();
+        }
+
+        public async override Task OnDisconnectedAsync(Exception? exception)
+        {
+            int _totalUsers = await _cache.GetRecordAsync<int>("TotalUsers");
+            await _cache.SetRecordAsync("TotalUsers", --_totalUsers);
+            //TotalUsers--;
+            Clients.All.SendAsync("updateTotalUsers", _totalUsers).GetAwaiter().GetResult();
+            await base.OnDisconnectedAsync(exception);
         }
     }
 }

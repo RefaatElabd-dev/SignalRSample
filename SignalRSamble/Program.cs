@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SignalRSamble.Data;
 using SignalRSamble.Hubs;
+using StackExchange.Redis;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,8 +15,20 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>();
+builder.Services.AddCors(p => p.AddPolicy("MyPolicy", builder =>
+{
+    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+}));
 builder.Services.AddControllersWithViews();
-builder.Services.AddSignalR();
+
+builder.Services.AddStackExchangeRedisCache(options => { options.Configuration = builder.Configuration["RedisCacheUrl"];});
+
+//builder.Services.AddSignalR();
+builder.Services.AddSignalR().AddStackExchangeRedis(builder.Configuration["ClusteredRedisServers"], options =>
+{
+    options.Configuration.ChannelPrefix = "MyApp";
+});
+
 
 var app = builder.Build();
 
@@ -37,11 +51,14 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseCors("MyPolicy");
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
-app.MapHub<UserHub>("/Hubs/userCount");
+app.MapHub<UserHub>("/hubs/userCount");
+app.MapHub<DeathlyHallowsHub>("/hubs/deathlyHallows");
+app.MapHub<HouseGroupHub>("/hubs/houseGroup");
 
 app.Run();

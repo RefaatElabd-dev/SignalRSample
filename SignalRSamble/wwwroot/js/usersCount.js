@@ -1,6 +1,13 @@
-﻿
-//create a connection
+﻿//create a connection
 var connectionUserCount = new signalR.HubConnectionBuilder().withUrl("/hubs/userCount").build();
+// Choose Http Transport type
+// types:
+//  HttpTransportType.None
+//  HttpTransportType.WebSocket
+//  HttpTransportType.ServerSentEvents
+//  HttpTransportType.LongPolling
+
+//var connectionUserCount = new signalR.HubConnectionBuilder().withUrl("/hubs/userCount", signalR.HttpTransportType.LongPolling).build();
 
 //connect to methods that hub invokes aka receive notificationsfrom hub
 connectionUserCount.on("updateTotalViews", (value) => {
@@ -14,7 +21,10 @@ connectionUserCount.on("updateTotalUsers", (value) => {
 })
 //invoke hub methods akasend notification to hub
 function newWindowLoadedOnClient() {
-    connectionUserCount.send("NewPageLoaded");
+    //use send if there is no return type to use.
+    //connectionUserCount.send("NewPageLoaded");
+    //use invoke if there is a return type.
+    connectionUserCount.invoke("NewPageLoaded").then(value => console.log(value));
 }
 
 function fullfilled() {
